@@ -1,0 +1,4 @@
+[package]
+name = "rcu"
+version = "0.1.0"
+authors = ["Jeehoon Kang <jeehoon.kang@sf.snu.ac.kr>"]
