@@ -2,3 +2,15 @@
 name = "rcu"
 version = "0.0.1"
 authors = ["Jeehoon Kang <jeehoon.kang@sf.snu.ac.kr>"]
+
+description = "User-level implementation of RCU"
+
+documentation = "https://github.com/jeehoonkang/rcu-rs"
+homepage = "https://github.com/jeehoonkang/rcu-rs"
+repository = "https://github.com/jeehoonkang/rcu-rs"
+
+readme = "README.md"
+
+keywords = ["RCU"]
+
+license = "MIT/Apache-2.0"
