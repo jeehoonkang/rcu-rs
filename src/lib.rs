@@ -6,6 +6,7 @@
 //! See `examples/*.rs` for usage.
 
 #![feature(core)]
+#![feature(nonzero)]
 
 extern crate core;
 
