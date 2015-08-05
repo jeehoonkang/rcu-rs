@@ -1,12 +1,13 @@
 // Copyright 2015 Jeehoon Kang <jeehoon.kang@sf.snu.ac.kr>
 // See LICENSE-APACHE and LICENSE-MIT file for more information.
 
+use core::mem;
+use core::nonzero::NonZero;
 use std::collections::hash_set::HashSet;
 use std::ptr;
-use std::sync::atomic;
-use std::sync::atomic::{AtomicUsize, AtomicPtr, Ordering};
 use std::sync::Mutex;
-use core::nonzero::NonZero;
+use std::sync::atomic::{AtomicUsize, AtomicPtr, Ordering};
+use std::sync::atomic;
 
 struct Node<'a, T: Sync + 'a> {
     item: T,
@@ -14,20 +15,21 @@ struct Node<'a, T: Sync + 'a> {
 }
 
 pub struct NodeIter<'a, T: Sync + 'a> {
-    node: &'a Node<'a, T>,
+    ptr: NonZero<*mut Node<'a, T>>,
 }
 
 impl<'a, T: Sync> Iterator for NodeIter<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
-        let ptr = self.node.next.load(Ordering::Acquire);
-        if ptr.is_null() {
+        let p = unsafe { (**(self.ptr)).next.load(Ordering::Acquire) };
+        if p.is_null() {
             None
         }
         else {
-            let result = &self.node.item;
-            self.node = unsafe { &*ptr };
-            Some(result)
+            unsafe {
+            self.ptr = NonZero::new(p);
+                Some(&(**(self.ptr)).item)
+            }
         }
     }
 }
@@ -51,7 +53,7 @@ impl<'a, T: Sync + 'a> Reader<'a, T> {
     }
 
     pub fn iter(&self) -> NodeIter<'a, T> {
-        unimplemented!()
+        NodeIter { ptr: unsafe { NonZero::new(&mut (**(self.writer)).head) } }
     }
 }
 
@@ -89,8 +91,8 @@ impl<'a, T: Sync + 'a> Writer<'a, T> {
         atomic::fence(Ordering::SeqCst);
     }
 
-    pub fn iter(&self) -> NodeIter<T> {
-        unimplemented!()
+    pub fn iter(&'a mut self) -> NodeIter<T> {
+        NodeIter { ptr: unsafe { NonZero::new(&mut self.head) } }
     }
 
     pub fn insert(&self, iter: NodeIter<T>, val:T) {
@@ -109,7 +111,7 @@ impl<'a, T: Sync + 'a> Writer<'a, T> {
 pub fn create<'a, T: Sync + 'a>() -> Writer<'a, T> {
     Writer {
         head: Node {
-            item: unimplemented!(),
+            item: unsafe { mem::uninitialized() },
             next: AtomicPtr::new(ptr::null_mut()),
         },
         readers: Mutex::new(HashSet::new()),
